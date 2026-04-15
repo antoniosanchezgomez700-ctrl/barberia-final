@@ -1,11 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { getUserAppointments } from '../firebase/db';
 
 export default function Loyalty() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [appointments, setAppointments] = useState([]);
+  const [loadingApps, setLoadingApps] = useState(true);
   
+  useEffect(() => {
+    if (user) {
+      getUserAppointments(user.uid).then(data => {
+        // filter out old appointments if desired, but for now show all or pending
+        const upcoming = data.filter(a => a.status !== 'completed');
+        setAppointments(upcoming);
+        setLoadingApps(false);
+      });
+    }
+  }, [user]);
+
   if (!user) return <p className="p-6 text-center text-gray-500">Inicia sesión para ver tu tarjeta.</p>;
 
   const totalPoints = 10;
@@ -78,24 +92,34 @@ export default function Loyalty() {
           <span className="text-[#eab308]">📅</span> Próximas Citas
         </h3>
 
-        <div className="bg-black border border-gray-800 rounded-2xl p-5 relative">
-          {/* Tag de servicio */}
-          <div className="flex justify-between items-start mb-2">
-            <span className="bg-[#eab308]/10 text-[#eab308] text-[10px] font-bold uppercase px-3 py-1 rounded">
-              Barba & Perfilado
-            </span>
-            <span className="text-gray-600 text-xs">ID: fb3ca</span>
-          </div>
-          
-          <div className="flex items-end gap-3 mb-6 mt-4">
-            <span className="text-3xl font-bold text-white tracking-tight">15/4/2026</span>
-            <span className="text-gray-500 text-sm font-medium pb-1">17:00 HS</span>
-          </div>
-
-          <button className="w-full bg-[#1a1a1a] text-[#eab308] hover:bg-[#222] font-bold text-xs uppercase tracking-widest py-3 rounded-full transition-colors border border-gray-800">
-            Modificar
-          </button>
-        </div>
+        {loadingApps ? (
+           <div className="animate-pulse h-24 bg-[#1a1a1a] rounded-2xl border border-gray-800"></div>
+        ) : appointments.length === 0 ? (
+           <div className="text-center py-6">
+             <p className="text-gray-500 text-sm mb-4">No tienes ninguna cita próxima.</p>
+             <button onClick={() => navigate('/booking')} className="bg-[#1a1a1a] text-[#eab308] hover:bg-[#222] font-bold text-xs uppercase tracking-widest py-3 px-6 rounded-full transition-colors border border-gray-800">Agendar Ahora</button>
+           </div>
+        ) : (
+           <div className="space-y-4">
+             {appointments.map(app => (
+               <div key={app.id} className="bg-black border border-gray-800 rounded-2xl p-5 relative">
+                 <div className="flex justify-between items-start mb-2">
+                   <span className="bg-[#eab308]/10 text-[#eab308] text-[10px] font-bold uppercase px-3 py-1 rounded">
+                     {app.serviceName || 'Servicio General'}
+                   </span>
+                   <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${app.status === 'pending' ? 'bg-yellow-900/30 text-yellow-500' : 'bg-gray-800 text-gray-400'}`}>
+                     {app.status === 'pending' ? 'Confirmada' : app.status}
+                   </span>
+                 </div>
+                 
+                 <div className="flex items-end gap-3 mb-2 mt-4">
+                   <span className="text-3xl font-bold text-white tracking-tight">{app.date.split("-").reverse().join("/")}</span>
+                   <span className="text-gray-500 text-sm font-medium pb-1">{app.time} HS</span>
+                 </div>
+               </div>
+             ))}
+           </div>
+        )}
       </div>
 
     </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getServices, updateService, getAllAppointments, updateAppointmentStatus, deleteAppointment, getAllUsers, addLoyaltyPoint } from '../firebase/db';
+import { getServices, updateService, getAllAppointments, updateAppointmentStatus, deleteAppointment, getAllUsers, addLoyaltyPoint, createNewService } from '../firebase/db';
+import { Scanner } from '@yudiel/react-qr-scanner';
 
 export default function Admin() {
   const [activeTab, setActiveTab] = useState('citas');
@@ -8,8 +9,15 @@ export default function Admin() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   
+  // Fidelidad
   const [loyaltyCode, setLoyaltyCode] = useState('');
   const [scanMessage, setScanMessage] = useState({ text: '', type: '' });
+  const [scanMode, setScanMode] = useState(false);
+  const [cooldown, setCooldown] = useState(false);
+
+  // Nuevo Servicio
+  const [showNewServiceForm, setShowNewServiceForm] = useState(false);
+  const [newService, setNewService] = useState({ name: '', price: '', duration: 30, image: '✂️' });
 
   useEffect(() => {
     loadData();
@@ -41,21 +49,58 @@ export default function Admin() {
     alert("Precios actualizados en la base de datos.");
   };
 
-  const handleLoyaltySubmit = async (e) => {
+  const handleCreateService = async (e) => {
     e.preventDefault();
-    if (!loyaltyCode) return;
+    if (!newService.name || !newService.price) return;
     setLoading(true);
-    const success = await addLoyaltyPoint(loyaltyCode);
+    
+    const sData = {
+      name: newService.name,
+      price: Number(newService.price),
+      duration: Number(newService.duration),
+      image: newService.image
+    };
+    
+    const created = await createNewService(sData);
+    if (created) {
+      setServices([...services, created]);
+      setShowNewServiceForm(false);
+      setNewService({ name: '', price: '', duration: 30, image: '✂️' });
+    } else {
+      alert("Error al crear servicio");
+    }
+    setLoading(false);
+  };
+
+  const processLoyalty = async (code) => {
+    setLoading(true);
+    const success = await addLoyaltyPoint(code);
     setLoading(false);
     if (success) {
        setScanMessage({ text: '¡Punto añadido correctamente!', type: 'success' });
        const usrs = await getAllUsers();
        setUsers(usrs);
     } else {
-       setScanMessage({ text: 'Error: No se encontró ese código de cliente.', type: 'error' });
+       setScanMessage({ text: 'Error: No se encontró ese código.', type: 'error' });
     }
     setLoyaltyCode('');
     setTimeout(() => setScanMessage({text:'', type:''}), 3000);
+  };
+
+  const handleLoyaltySubmit = async (e) => {
+    e.preventDefault();
+    if (!loyaltyCode) return;
+    await processLoyalty(loyaltyCode);
+  };
+
+  const handleScan = async (result) => {
+    if (result && result.length > 0 && !cooldown) {
+      const code = result[0].rawValue;
+      setCooldown(true);
+      await processLoyalty(code);
+      setScanMode(false);
+      setTimeout(() => setCooldown(false), 3000);
+    }
   };
 
   const handleStatusChange = async (id, newStatus) => {
@@ -145,25 +190,47 @@ export default function Admin() {
           {activeTab === 'fidelidad' && (
              <div className="bg-[#111] border border-[#222] p-8 rounded-3xl text-center shadow-2xl relative overflow-hidden">
                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-black via-[#eab308] to-black"></div>
-               <div className="w-20 h-20 bg-black rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-[#eab308]/20 shadow-[0_0_20px_rgba(234,179,8,0.1)]">
-                 <span className="text-3xl text-[#eab308]">🏆</span>
-               </div>
-               <h3 className="text-white font-black uppercase tracking-widest mb-3">Recompensa VIP</h3>
-               <p className="text-sm text-gray-400 mb-8 px-2 font-medium">1. El cliente te dicta su código secreto desde su móvil.<br/>2. Tú lo pegas aquí abajo.<br/>3. Gana 1 punto al instante.</p>
                
-               <form onSubmit={handleLoyaltySubmit} className="flex flex-col gap-4">
-                 <input 
-                   type="text" 
-                   required
-                   value={loyaltyCode}
-                   onChange={e => setLoyaltyCode(e.target.value)}
-                   placeholder="Pega el código aquí..." 
-                   className="bg-black border border-gray-700 text-white px-5 py-4 rounded-xl text-center font-mono tracking-widest focus:border-[#eab308] outline-none placeholder:text-gray-600 transition-colors"
-                 />
-                 <button type="submit" className="bg-[#eab308] text-black font-black uppercase tracking-widest py-4 rounded-xl hover:bg-yellow-400 transition-transform active:scale-95 shadow-lg">
-                   Añadir Punto
-                 </button>
-               </form>
+               <div className="flex gap-2 bg-black p-1 rounded-xl border border-gray-800 mb-6">
+                 <button onClick={() => setScanMode(false)} className={`flex-1 py-3 rounded-lg font-bold text-sm uppercase tracking-wider transition-colors ${!scanMode ? 'bg-[#1a1a1a] text-[#eab308]' : 'text-gray-500 hover:text-white'}`}>Manual</button>
+                 <button onClick={() => setScanMode(true)} className={`flex-1 py-3 rounded-lg font-bold text-sm uppercase tracking-wider transition-colors ${scanMode ? 'bg-[#1a1a1a] text-[#eab308]' : 'text-gray-500 hover:text-white'}`}>Cámara QR</button>
+               </div>
+
+               {!scanMode ? (
+                 <>
+                   <div className="w-20 h-20 bg-black rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-[#eab308]/20 shadow-[0_0_20px_rgba(234,179,8,0.1)]">
+                     <span className="text-3xl text-[#eab308]">🏆</span>
+                   </div>
+                   <h3 className="text-white font-black uppercase tracking-widest mb-3">Sellar VIP</h3>
+                   <p className="text-sm text-gray-400 mb-8 px-2 font-medium">Introduce abajo la ID del cliente para sumar un punto a su tarjeta.</p>
+                   
+                   <form onSubmit={handleLoyaltySubmit} className="flex flex-col gap-4">
+                     <input 
+                       type="text" 
+                       required
+                       value={loyaltyCode}
+                       onChange={e => setLoyaltyCode(e.target.value)}
+                       placeholder="Pega el código aquí..." 
+                       className="bg-black border border-gray-700 text-white px-5 py-4 rounded-xl text-center font-mono tracking-widest focus:border-[#eab308] outline-none placeholder:text-gray-600 transition-colors"
+                     />
+                     <button type="submit" className="bg-[#eab308] text-black font-black uppercase tracking-widest py-4 rounded-xl hover:bg-yellow-400 transition-transform active:scale-95 shadow-lg">
+                       Añadir Punto
+                     </button>
+                   </form>
+                 </>
+               ) : (
+                 <div className="animate-fade-in">
+                    <h3 className="text-white font-black uppercase tracking-widest mb-4">Apunta al QR</h3>
+                    <div className="rounded-2xl overflow-hidden border-2 border-[#eab308]/50 shadow-[0_0_20px_rgba(234,179,8,0.2)] bg-black w-full aspect-square relative flex items-center justify-center">
+                       {cooldown ? (
+                         <div className="text-[#eab308] animate-pulse font-bold tracking-widest">Procesando...</div>
+                       ) : (
+                         <Scanner onScan={handleScan} allowMultiple={true} components={{ audio: true, finder: true }} />
+                       )}
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-4 uppercase tracking-widest">La cámara se cerrará al confirmar</p>
+                 </div>
+               )}
                
                {scanMessage.text && (
                  <div className={`mt-6 p-4 rounded-xl text-sm font-bold animate-fade-in ${scanMessage.type === 'success' ? 'bg-green-900/20 text-green-500 border border-green-900/50' : 'bg-red-900/20 text-red-500 border border-red-900/50'}`}>
@@ -176,7 +243,31 @@ export default function Admin() {
           {/* PRECIOS TAB */}
           {activeTab === 'precios' && (
              <div className="bg-[#111] border border-gray-800 p-6 rounded-3xl shadow-xl">
-               <h3 className="font-bold text-white mb-6 border-l-4 border-[#eab308] pl-3">Cambiar Precios</h3>
+               <div className="flex justify-between items-center mb-6 pl-3 border-l-4 border-[#eab308]">
+                 <h3 className="font-bold text-white">Editar App</h3>
+                 <button onClick={() => setShowNewServiceForm(!showNewServiceForm)} className="bg-[#1a1a1a] text-[#eab308] hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border border-gray-800">
+                   {showNewServiceForm ? 'Cerrar' : '+ Corte'}
+                 </button>
+               </div>
+
+               {showNewServiceForm && (
+                 <form onSubmit={handleCreateService} className="mb-8 bg-black p-4 rounded-2xl border border-dashed border-[#eab308]/50 flex flex-col gap-3 animate-fade-in">
+                   <div className="flex gap-2">
+                     <input type="text" value={newService.image} onChange={e => setNewService({...newService, image: e.target.value})} placeholder="✂️" maxLength="2" className="w-14 bg-[#1a1a1a] border border-gray-800 rounded-xl text-center text-xl outline-none focus:border-[#eab308]" required />
+                     <input type="text" value={newService.name} onChange={e => setNewService({...newService, name: e.target.value})} placeholder="Nombre del corte..." className="flex-1 bg-[#1a1a1a] text-white border border-gray-800 py-3 px-3 rounded-xl text-sm outline-none focus:border-[#eab308]" required />
+                   </div>
+                   <div className="flex gap-2">
+                     <div className="relative flex-1">
+                       <span className="absolute left-3 top-3 text-gray-500 text-xs uppercase tracking-widest">Precio</span>
+                       <input type="number" value={newService.price} onChange={e => setNewService({...newService, price: e.target.value})} className="w-full bg-[#1a1a1a] text-white font-bold border border-gray-800 py-3 pl-16 pr-3 rounded-xl text-sm outline-none focus:border-[#eab308]" required />
+                     </div>
+                   </div>
+                   <button type="submit" disabled={loading} className="w-full mt-2 bg-[#eab308] text-black font-black py-3 rounded-xl uppercase tracking-widest hover:bg-yellow-400">
+                     Crear Nuevo
+                   </button>
+                 </form>
+               )}
+
                <div className="space-y-4">
                  {services.map(s => (
                    <div key={s.id} className="flex gap-4 items-center bg-black p-4 rounded-2xl border border-gray-800 transition-colors focus-within:border-[#eab308]">
@@ -192,7 +283,7 @@ export default function Admin() {
                  ))}
                  
                  <button onClick={savePrices} className="w-full mt-8 bg-white text-black font-black py-4 rounded-2xl uppercase tracking-widest hover:bg-gray-200 transition-transform active:scale-95 shadow-lg border-2 border-white">
-                   Guardar en la Bolsa
+                   Guardar en Base
                  </button>
                </div>
              </div>

@@ -1,5 +1,5 @@
 import { db } from './config';
-import { collection, doc, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, doc, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc, query, where } from "firebase/firestore";
 
 // Fetch Services (si está vacío, inicializa)
 export const getServices = async () => {
@@ -28,6 +28,16 @@ export const updateService = async (id, updatedData) => {
   await updateDoc(doc(db, "services", id), updatedData);
 };
 
+export const createNewService = async (serviceData) => {
+  try {
+     const docRef = await addDoc(collection(db, "services"), serviceData);
+     return { id: docRef.id, ...serviceData };
+  } catch(e) {
+     console.error(e);
+     return null;
+  }
+};
+
 export const bookAppointment = async (appointmentData) => {
   try {
      const docRef = await addDoc(collection(db, "appointments"), { ...appointmentData, status: 'pending' });
@@ -40,6 +50,12 @@ export const bookAppointment = async (appointmentData) => {
 
 export const getAllAppointments = async () => {
   const snapshot = await getDocs(collection(db, "appointments"));
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
+
+export const getUserAppointments = async (uid) => {
+  const q = query(collection(db, "appointments"), where("userId", "==", uid));
+  const snapshot = await getDocs(q);
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
