@@ -3,7 +3,7 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyD_XvKmpnc9NBY7PBJ1lphKy4sYEMAX6MY",
+  apiKey: "AIzaSyD_XvKmpnc9NBY7PBJ1lphKy4sYEMAx6MY",
   authDomain: "modern-barber-203fd.firebaseapp.com",
   projectId: "modern-barber-203fd",
   storageBucket: "modern-barber-203fd.firebasestorage.app",

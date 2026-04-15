@@ -16,7 +16,7 @@ export default function Footer() {
           f
         </a>
       </div>
-      <p className="text-[10px] text-gray-500 uppercase tracking-widest">© 2026 Modern Barber PWA.</p>
+      <p className="text-[10px] text-gray-500 uppercase tracking-widest">© 2026 Modern Barber.</p>
     </footer>
   );
 }
