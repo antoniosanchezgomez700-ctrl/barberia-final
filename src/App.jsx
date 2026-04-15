@@ -7,6 +7,7 @@ import Booking from './pages/Booking';
 import Loyalty from './pages/Loyalty';
 import Admin from './pages/Admin';
 import Auth from './pages/Auth';
+import Footer from './components/Footer';
 
 // Mocked Login View if not logged in
 function AuthCheck({ children }) {
@@ -67,6 +68,9 @@ function AppContent() {
             <Route path="/admin" element={<Admin />} />
           </Routes>
         </div>
+
+        {/* Global Footer */}
+        <Footer />
 
         {/* Navigation Bottom Tab siempre visible para navegar al catálogo */}
         <Navigation />

@@ -54,6 +54,22 @@ export default function Loyalty() {
             Agendar servicio <span className="text-xl leading-none ml-1">›</span>
           </button>
         </div>
+
+        {/* CÓDIGO DE CLIENTE PARA ENTREGAR AL ADMIN */}
+        <div className="mt-8 border-t border-dashed border-gray-800 pt-6 text-center">
+          <p className="text-xs uppercase tracking-widest text-gray-400 mb-4 font-bold">Muestra esto en Caja</p>
+          
+          <div className="bg-white p-2 w-32 h-32 mx-auto rounded-2xl shadow-[0_0_20px_rgba(234,179,8,0.15)] mb-4 border-2 border-[#eab308]">
+             <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${user.uid}`} alt="QR Cliente" className="w-full h-full filter contrast-125" />
+          </div>
+          
+          <p className="text-[10px] uppercase tracking-widest text-gray-600 mb-1">O dicta tu ID Manual</p>
+          <div className="bg-black border border-gray-800 py-2 px-4 rounded-xl inline-block mb-3">
+             <span className="font-mono text-[#eab308] font-black tracking-widest text-xs">{user.uid}</span>
+          </div>
+          
+          <p className="text-[10px] text-gray-500 max-w-xs mx-auto italic">El peluquero introducirá este código en su sistema para sellarte la tarjeta.</p>
+        </div>
       </div>
 
       {/* Sección Próximas Citas */}

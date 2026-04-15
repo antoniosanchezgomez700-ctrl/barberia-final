@@ -1,5 +1,5 @@
 import { db } from './config';
-import { collection, doc, getDocs, getDoc, setDoc, addDoc, updateDoc } from "firebase/firestore";
+import { collection, doc, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
 
 // Fetch Services (si está vacío, inicializa)
 export const getServices = async () => {
@@ -24,14 +24,31 @@ export const getServices = async () => {
   return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
+export const updateService = async (id, updatedData) => {
+  await updateDoc(doc(db, "services", id), updatedData);
+};
+
 export const bookAppointment = async (appointmentData) => {
   try {
-     const docRef = await addDoc(collection(db, "appointments"), appointmentData);
+     const docRef = await addDoc(collection(db, "appointments"), { ...appointmentData, status: 'pending' });
      return { success: true, id: docRef.id };
   } catch(e) {
      console.error(e);
      return { success: false, error: e.message };
   }
+};
+
+export const getAllAppointments = async () => {
+  const snapshot = await getDocs(collection(db, "appointments"));
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
+
+export const updateAppointmentStatus = async (id, status) => {
+  await updateDoc(doc(db, "appointments", id), { status });
+};
+
+export const deleteAppointment = async (id) => {
+  await deleteDoc(doc(db, "appointments", id));
 };
 
 export const getUserData = async (uid) => {
@@ -41,3 +58,19 @@ export const getUserData = async (uid) => {
    }
    return null;
 }
+
+export const getAllUsers = async () => {
+  const snapshot = await getDocs(collection(db, "users"));
+  return snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+};
+
+export const addLoyaltyPoint = async (uid) => {
+  const userRef = doc(db, "users", uid);
+  const userSnap = await getDoc(userRef);
+  if (userSnap.exists()) {
+    const currentPoints = userSnap.data().loyaltyPoints || 0;
+    await updateDoc(userRef, { loyaltyPoints: currentPoints + 1 });
+    return true;
+  }
+  return false;
+};

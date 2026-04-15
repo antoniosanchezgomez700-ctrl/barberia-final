@@ -160,6 +160,7 @@ export default function Home() {
         </div>
         <p className="text-gray-400 text-sm mt-4 text-center">Calle Mayor 12, Local 4, Centro, Madrid</p>
       </section>
+
     </div>
   );
 }
