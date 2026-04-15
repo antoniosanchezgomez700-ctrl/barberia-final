@@ -29,6 +29,9 @@ export default function Admin() {
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [newClientName, setNewClientName] = useState('');
   const [newClientPhone, setNewClientPhone] = useState('');
+  
+  // Modal de Tarjeta QR para Clientes Físicos
+  const [qrModalUser, setQrModalUser] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -173,6 +176,26 @@ export default function Admin() {
 
   return (
     <div className="px-4 py-8 animate-fade-in pb-24 max-w-lg mx-auto">
+      {qrModalUser && (
+         <div className="fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-center p-6 animate-fade-in">
+            <h2 className="text-white text-3xl font-black uppercase tracking-widest mb-2 italic drop-shadow-lg">Tarjeta Cliente</h2>
+            <p className="text-[#eab308] font-bold mb-8 text-center text-sm">{qrModalUser.name}</p>
+            
+            <div className="bg-white p-5 rounded-3xl border-4 border-[#eab308] shadow-[0_0_50px_rgba(234,179,8,0.3)] mb-6 animate-pulse hover:animate-none">
+               <img src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${qrModalUser.uid}`} alt="QR" className="w-[220px] h-[220px] object-contain filter contrast-125" />
+            </div>
+            
+            <p className="text-gray-400 mb-1 text-xs uppercase tracking-widest font-bold">ID Manual de Fidelidad</p>
+            <p className="text-[#eab308] font-mono text-xl bg-[#1a1a1a] py-3 px-6 rounded-2xl border border-[#eab308]/30 mb-8 tracking-widest selection:bg-[#eab308] selection:text-black">{qrModalUser.uid}</p>
+            
+            <p className="text-gray-500 text-[10px] text-center max-w-xs mb-8 uppercase tracking-widest">Hazle una foto a esta pantalla con tu móvil para guardar tu tarjeta y acumular puntos en tus cortes.</p>
+
+            <button onClick={() => setQrModalUser(null)} className="w-[200px] bg-white text-black py-4 rounded-2xl text-sm font-black uppercase tracking-widest hover:scale-105 transition-transform shadow-xl">
+               ✕ Cerrar
+            </button>
+         </div>
+      )}
+
       <h2 className="text-2xl font-black mb-6 text-[#eab308] uppercase tracking-wide">Panel Admin</h2>
       
       {/* Tabs */}
@@ -420,10 +443,16 @@ export default function Admin() {
                     <div className="flex-1">
                       <p className="text-[#eab308] font-bold text-[15px] tracking-wide mb-0.5">{u.name || 'Sin Nombre'}</p>
                       {u.phone && <p className="text-white text-xs font-bold mb-1">📱 {u.phone}</p>}
-                      <p className="text-[10px] text-gray-500 font-mono tracking-widest break-all mb-3">{u.email}</p>
-                      <button onClick={() => handleDeleteClient(u.uid)} className="text-red-500 bg-red-950/30 px-3 py-1 rounded border border-red-900/50 text-[10px] uppercase font-bold tracking-widest hover:bg-red-900/50 transition">
-                         Eliminar
-                      </button>
+                      <p className="text-[10px] text-gray-500 font-mono tracking-widest break-all mb-1">{u.email}</p>
+                      <p className="text-[9px] text-[#eab308]/80 font-mono tracking-widest mb-3">ID: {u.uid}</p>
+                      <div className="flex gap-2">
+                        <button onClick={() => setQrModalUser(u)} className="text-[#eab308] bg-[#eab308]/10 px-3 py-1.5 rounded border border-[#eab308]/30 text-[10px] uppercase font-bold tracking-widest hover:bg-[#eab308]/20 transition flex items-center gap-1 shadow-sm">
+                           📷 Generar QR
+                        </button>
+                        <button onClick={() => handleDeleteClient(u.uid)} className="text-red-500 bg-red-950/30 px-3 py-1.5 rounded border border-red-900/50 text-[10px] uppercase font-bold tracking-widest hover:bg-red-900/50 transition">
+                           X
+                        </button>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <button onClick={(e) => { e.stopPropagation(); handleRemoveLoyalty(u.uid); }} className="w-8 h-8 rounded-full bg-[#1a1a1a] text-gray-400 flex items-center justify-center font-black border border-gray-800 hover:text-white hover:border-gray-500">-</button>

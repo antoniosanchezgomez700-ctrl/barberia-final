@@ -7,13 +7,31 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  const allReviewsDatabase = [
+    { name: "Carlos M.", text: "El mejor fade de toda la ciudad. El trato es 10/10.", stars: 5, avatar: "https://i.pravatar.cc/150?u=carlosm" },
+    { name: "David G.", text: "Excelente experiencia, muy profesionales y puntuales con la cita.", stars: 5, avatar: "https://i.pravatar.cc/150?u=davidg" },
+    { name: "Jorge P.", text: "Corte impecable, ambiente brutal y música increíble. Volveré.", stars: 5, avatar: "https://i.pravatar.cc/150?u=jorgep" },
+    { name: "Alex R.", text: "Por fin encontré un barbero que sabe arreglarme la barba exactamente como quiero.", stars: 5, avatar: "https://i.pravatar.cc/150?u=alexr" },
+    { name: "Miguel S.", text: "Rápidos, limpios y detallistas. Se nota cuando a alguien le gusta su trabajo.", stars: 5, avatar: "https://i.pravatar.cc/150?u=miguels" },
+    { name: "Luis F.", text: "Me hice un cambio de color y me dejaron espectacular. Recomendado al 100%.", stars: 5, avatar: "https://i.pravatar.cc/150?u=luisf" },
+    { name: "Andrés V.", text: "El Ritual de Barba es otro nivel, súper relajante con toalla caliente. ¡Un lujo!", stars: 5, avatar: "https://i.pravatar.cc/150?u=andresv" },
+    { name: "Javi L.", text: "Súper buen rollo en el local. Salí con el mejor mullet que te puedas imaginar.", stars: 5, avatar: "https://i.pravatar.cc/150?u=javil" },
+    { name: "Oscar D.", text: "Puntualidad estricta. Ni esperé 2 minutos en el sofá antes de sentarme.", stars: 5, avatar: "https://i.pravatar.cc/150?u=oscard" },
+    { name: "Iván T.", text: "Gran asesoramiento. No sabía qué hacerme, me sugirieron un estilo texturizado y acertaron.", stars: 5, avatar: "https://i.pravatar.cc/150?u=ivant" },
+    { name: "Raúl C.", text: "Llevo a mi hijo pequeño y tienen muchísima paciencia con él. El niño sale feliz.", stars: 5, avatar: "https://i.pravatar.cc/150?u=raulc" },
+    { name: "Dani M.", text: "Servicio de peluquería premium. Te lavan el pelo, asesoran y te invitan a un café.", stars: 5, avatar: "https://i.pravatar.cc/150?u=danim" }
+  ];
+
   // Estados de reseñas
-  const [reviews, setReviews] = useState([
-    { name: "Carlos M.", text: "El mejor fade de toda la ciudad. El trato es 10/10.", stars: 5, avatar: "https://i.pravatar.cc/150?img=11" },
-    { name: "David G.", text: "Excelente experiencia, muy profesionales y puntuales con la cita.", stars: 5, avatar: "https://i.pravatar.cc/150?img=68" }
-  ]);
+  const [reviews, setReviews] = useState([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [newReview, setNewReview] = useState({ name: '', text: '' });
+
+  useEffect(() => {
+    // Escoger 6 reseñas aleatorias cada vez que alguien entra a la página web
+    const shuffled = [...allReviewsDatabase].sort(() => 0.5 - Math.random());
+    setReviews(shuffled.slice(0, 6));
+  }, []);
 
   const handleReviewSubmit = (e) => {
     e.preventDefault();
