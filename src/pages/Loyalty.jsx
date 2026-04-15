@@ -33,34 +33,53 @@ export default function Loyalty() {
   if (!user) return <p className="p-6 text-center text-gray-500">Inicia sesión para ver tu tarjeta.</p>;
 
   const totalPoints = 10;
-  const currentPoints = user.loyaltyPoints || 0;
+  const isExpired = user.cardExpiryDate && new Date() > new Date(user.cardExpiryDate);
+  const rawPoints = isExpired ? 0 : (user.loyaltyPoints || 0);
+  
+  let currentCardLevel = 1;
+  let currentPoints = rawPoints;
+  if (rawPoints > 0) {
+    if (rawPoints % 10 === 0) {
+      currentCardLevel = rawPoints / 10;
+      currentPoints = 10;
+    } else {
+      currentCardLevel = Math.floor(rawPoints / 10) + 1;
+      currentPoints = rawPoints % 10;
+    }
+  }
   
   return (
     <div className="px-6 py-10 animate-fade-in pb-24 max-w-sm mx-auto">
 
       {/* Tarjeta Visual (Estilo Captura) */}
-      <div className="bg-[#0f0f0f] text-white p-8 rounded-[30px] border border-[#222] shadow-2xl relative mb-10">
+      <div className="bg-[#0f0f0f] text-white p-8 rounded-[30px] border border-[#222] shadow-2xl relative mb-10 overflow-hidden">
         
+        {currentCardLevel > 1 && !isExpired && (
+            <div className="absolute -right-6 -top-6 bg-[#eab308] text-black w-24 h-24 rounded-full flex items-end justify-center pb-4 text-xs font-black uppercase rotate-45 tracking-widest shadow-lg">
+                Nivel {currentCardLevel}
+            </div>
+        )}
+
         <div className="flex justify-between items-start mb-6">
           <h2 className="text-3xl font-black italic uppercase leading-tight tracking-tight drop-shadow-md">
             Tarjeta de<br/>Fidelidad
           </h2>
-          <div className="bg-[#eab308] text-black font-bold uppercase text-[10px] px-3 py-1.5 rounded-full inline-block tracking-wider">
-            Gold Member
+          <div className="bg-[#eab308] text-black font-bold uppercase text-[10px] px-3 py-1.5 rounded-full inline-block tracking-wider z-10 relative">
+            Tarjeta {currentCardLevel}
           </div>
         </div>
         
-        <p className="text-gray-400 text-sm mb-10 pr-6">Completa 10 servicios y obtén un corte gratis</p>
+        <p className="text-gray-400 text-sm mb-8 pr-6">Completa 10 servicios en esta tarjeta y obtén un corte gratis</p>
 
         {/* Puntos circulares al estilo de la foto */}
-        <div className="grid grid-cols-5 gap-y-4 gap-x-2 relative z-10 mb-10 px-2 pl-4">
+        <div className="grid grid-cols-5 gap-y-4 gap-x-2 relative z-10 mb-6 px-2 pl-4">
           {[...Array(totalPoints)].map((_, i) => {
             const isCompleted = i < currentPoints;
             return (
               <div key={i} className="flex justify-center">
                 <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
                   isCompleted 
-                    ? 'border-2 border-dashed border-[#eab308] text-[#eab308]' 
+                    ? 'border-2 border-dashed border-[#eab308] text-[#eab308] shadow-[0_0_15px_rgba(234,179,8,0.2)]' 
                     : 'bg-[#1a1a1a] text-gray-600'
                 }`}>
                   {i + 1}
@@ -70,12 +89,18 @@ export default function Loyalty() {
           })}
         </div>
 
+        {user.cardExpiryDate && !isExpired && (
+            <p className="text-center text-[#eab308] text-[10px] uppercase font-bold tracking-widest mb-4">
+              Válida hasta: {new Date(user.cardExpiryDate).toLocaleDateString()}
+            </p>
+        )}
+
         <div className="flex justify-between items-end border-t border-gray-800 pt-6">
           <p className="text-gray-400 text-sm italic pr-6 pb-2">
-            Faltan {10 - currentPoints} para el premio
+            Faltan {10 - currentPoints} para el premio VIP
           </p>
           <button onClick={() => navigate('/booking')} className="text-[#eab308] font-semibold text-sm hover:underline flex items-center gap-1 shrink-0 pb-2">
-            Agendar servicio <span className="text-xl leading-none ml-1">›</span>
+            Agendar <span className="text-xl leading-none ml-1">›</span>
           </button>
         </div>
 

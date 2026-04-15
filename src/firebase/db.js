@@ -84,8 +84,24 @@ export const addLoyaltyPoint = async (uid) => {
   const userRef = doc(db, "users", uid);
   const userSnap = await getDoc(userRef);
   if (userSnap.exists()) {
-    const currentPoints = userSnap.data().loyaltyPoints || 0;
-    await updateDoc(userRef, { loyaltyPoints: currentPoints + 1 });
+    let currentPoints = userSnap.data().loyaltyPoints || 0;
+    let cardExpiryDate = userSnap.data().cardExpiryDate || null;
+
+    if (cardExpiryDate && new Date() > new Date(cardExpiryDate)) {
+      currentPoints = 0; // Caducó
+    }
+
+    let newExpiryDate = cardExpiryDate;
+    if (currentPoints % 10 === 0) {
+      const d = new Date();
+      d.setMonth(d.getMonth() + 6);
+      newExpiryDate = d.toISOString();
+    }
+
+    await updateDoc(userRef, { 
+      loyaltyPoints: currentPoints + 1,
+      cardExpiryDate: newExpiryDate
+    });
     return true;
   }
   return false;
