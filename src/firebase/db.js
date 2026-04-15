@@ -90,3 +90,24 @@ export const addLoyaltyPoint = async (uid) => {
   }
   return false;
 };
+
+export const removeLoyaltyPoint = async (uid) => {
+  const userRef = doc(db, "users", uid);
+  const userSnap = await getDoc(userRef);
+  if (userSnap.exists()) {
+    const currentPoints = userSnap.data().loyaltyPoints || 0;
+    const newPoints = currentPoints > 0 ? currentPoints - 1 : 0;
+    await updateDoc(userRef, { loyaltyPoints: newPoints });
+    return true;
+  }
+  return false;
+};
+
+export const deleteClient = async (uid) => {
+  try {
+     await deleteDoc(doc(db, "users", uid));
+     return true;
+  } catch(e) {
+     return false;
+  }
+};

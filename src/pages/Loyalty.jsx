@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { getUserAppointments } from '../firebase/db';
+import { getUserAppointments, deleteAppointment } from '../firebase/db';
 
 export default function Loyalty() {
   const { user } = useAuth();
@@ -12,13 +12,23 @@ export default function Loyalty() {
   useEffect(() => {
     if (user) {
       getUserAppointments(user.uid).then(data => {
-        // filter out old appointments if desired, but for now show all or pending
         const upcoming = data.filter(a => a.status !== 'completed');
         setAppointments(upcoming);
         setLoadingApps(false);
       });
     }
   }, [user]);
+
+  const handleDeleteAppointment = async (id) => {
+    if (window.confirm("¿Seguro que deseas cancelar esta cita?")) {
+       setLoadingApps(true);
+       await deleteAppointment(id);
+       const newData = await getUserAppointments(user.uid);
+       const upcoming = newData.filter(a => a.status !== 'completed');
+       setAppointments(upcoming);
+       setLoadingApps(false);
+    }
+  };
 
   if (!user) return <p className="p-6 text-center text-gray-500">Inicia sesión para ver tu tarjeta.</p>;
 
@@ -116,6 +126,9 @@ export default function Loyalty() {
                    <span className="text-3xl font-bold text-white tracking-tight">{app.date.split("-").reverse().join("/")}</span>
                    <span className="text-gray-500 text-sm font-medium pb-1">{app.time} HS</span>
                  </div>
+                 <button onClick={() => handleDeleteAppointment(app.id)} className="w-full mt-3 bg-[#1a1a1a] text-red-500 hover:bg-red-950/30 hover:text-red-400 font-bold text-xs uppercase tracking-widest py-3 rounded-full transition-colors border border-red-900/30">
+                   ✕ Cancelar Cita
+                 </button>
                </div>
              ))}
            </div>

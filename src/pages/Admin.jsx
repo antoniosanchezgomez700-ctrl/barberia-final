@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getServices, updateService, getAllAppointments, updateAppointmentStatus, deleteAppointment, getAllUsers, addLoyaltyPoint, createNewService } from '../firebase/db';
+import { getServices, updateService, getAllAppointments, updateAppointmentStatus, deleteAppointment, getAllUsers, addLoyaltyPoint, createNewService, removeLoyaltyPoint, deleteClient } from '../firebase/db';
 import { Scanner } from '@yudiel/react-qr-scanner';
 
 export default function Admin() {
@@ -103,6 +103,24 @@ export default function Admin() {
     }
   };
 
+  const handleRemoveLoyalty = async (uid) => {
+    setLoading(true);
+    await removeLoyaltyPoint(uid);
+    const usrs = await getAllUsers();
+    setUsers(usrs);
+    setLoading(false);
+  };
+
+  const handleDeleteClient = async (uid) => {
+    if (window.confirm("¿Seguro que deseas ELIMINAR a este cliente para siempre?")) {
+      setLoading(true);
+      await deleteClient(uid);
+      const usrs = await getAllUsers();
+      setUsers(usrs);
+      setLoading(false);
+    }
+  };
+
   const handleStatusChange = async (id, newStatus) => {
     await updateAppointmentStatus(id, newStatus);
     const apps = await getAllAppointments();
@@ -173,13 +191,19 @@ export default function Admin() {
                {users.length === 0 ? <p className="text-sm text-gray-500 bg-[#111] p-4 rounded-xl border border-gray-800">Todavía no se ha registrado nadie. Sé el primero probando el registro en la página principal.</p> : null}
                {users.map(u => (
                  <div key={u.uid} className="bg-[#111] border border-gray-800 p-4 rounded-2xl flex justify-between items-center transition-transform hover:scale-[1.02]">
-                    <div>
-                      <p className="text-white font-bold text-sm tracking-wide">{u.email}</p>
+                    <div className="flex-1">
+                      <p className="text-white font-bold text-sm tracking-wide break-all">{u.email}</p>
                       <p className="text-[10px] text-gray-500 mt-1 font-mono tracking-widest">ID: {u.uid}</p>
+                      <button onClick={() => handleDeleteClient(u.uid)} className="mt-3 text-red-500 bg-red-950/30 px-3 py-1 rounded border border-red-900/50 text-[10px] uppercase font-bold tracking-widest hover:bg-red-900/50 transition">
+                         Eliminar
+                      </button>
                     </div>
-                    <div className="text-center bg-black border border-gray-800 px-4 py-2 rounded-xl">
-                      <p className="text-[#eab308] font-black text-xl leading-none">{u.loyaltyPoints || 0}</p>
-                      <p className="text-[9px] uppercase tracking-widest text-gray-500 mt-1">Puntos</p>
+                    <div className="flex items-center gap-2">
+                      <button onClick={(e) => { e.stopPropagation(); handleRemoveLoyalty(u.uid); }} className="w-8 h-8 rounded-full bg-[#1a1a1a] text-gray-400 flex items-center justify-center font-black border border-gray-800 hover:text-white hover:border-gray-500">-</button>
+                      <div className="text-center bg-black border border-gray-800 px-4 py-2 rounded-xl">
+                        <p className="text-[#eab308] font-black text-xl leading-none">{u.loyaltyPoints || 0}</p>
+                        <p className="text-[9px] uppercase tracking-widest text-gray-500 mt-1">Puntos</p>
+                      </div>
                     </div>
                  </div>
                ))}
