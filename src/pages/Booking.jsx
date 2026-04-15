@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { bookAppointment, getServices } from '../firebase/db';
+import { bookAppointment, getServices, getUserData, saveAnonymousClient } from '../firebase/db';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Booking() {
@@ -19,9 +19,20 @@ export default function Booking() {
     getServices().then(data => {
       setServicesList(data);
       if(data.length > 0) setService(data[0].id);
-      setLoading(false);
+      
+      if (user && user.uid) {
+         getUserData(user.uid).then(uData => {
+            if (uData) {
+               setClientName(uData.name || '');
+               setClientPhone(uData.phone || '');
+            }
+            setLoading(false);
+         });
+      } else {
+         setLoading(false);
+      }
     });
-  }, []);
+  }, [user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,10 +46,15 @@ export default function Booking() {
       serviceId: selectedSvc.id, 
       serviceName: selectedSvc.name, 
       userId: user ? user.uid : 'anonymous',
-      userEmail: user ? user.email : 'Cliente Nuevo',
+      userEmail: user ? user.email : 'No Registrado',
       clientName,
       clientPhone
     });
+    
+    if (!user) {
+      await saveAnonymousClient(clientName, clientPhone);
+    }
+    
     if (result.success) {
       setSuccess(true);
     }
@@ -119,28 +135,31 @@ export default function Booking() {
           </div>
         )}
 
-        {/* Tus Datos */}
-        <div className="bg-[#111] border border-gray-800 p-5 rounded-2xl shadow-sm">
-          <label className="block text-sm font-black mb-4 text-[#eab308] uppercase tracking-wider">Tus Datos</label>
-          <div className="flex flex-col gap-4">
-            <input 
-              type="text" 
-              placeholder="Tu Nombre y Apellido" 
-              value={clientName} 
-              onChange={(e) => setClientName(e.target.value)} 
-              className="w-full bg-black text-white border border-gray-800 rounded-xl p-4 focus:ring-2 focus:ring-[#eab308] outline-none"
-              required
-            />
-            <input 
-              type="tel" 
-              placeholder="Tu Teléfono (para avisos)" 
-              value={clientPhone} 
-              onChange={(e) => setClientPhone(e.target.value)} 
-              className="w-full bg-black text-white border border-gray-800 rounded-xl p-4 focus:ring-2 focus:ring-[#eab308] outline-none"
-              required
-            />
+        {/* Tus Datos: Ocultos si el usuario ya está logueado y tiene sus datos listos */}
+        {(!user || (!clientName && !clientPhone)) && (
+          <div className="bg-[#111] border border-gray-800 p-5 rounded-2xl shadow-sm">
+            <label className="block text-sm font-black mb-4 text-[#eab308] uppercase tracking-wider">Tus Datos</label>
+            <div className="flex flex-col gap-4">
+              <input 
+                type="text" 
+                placeholder="Tu Nombre y Apellido" 
+                value={clientName} 
+                onChange={(e) => setClientName(e.target.value)} 
+                className="w-full bg-black text-white border border-gray-800 rounded-xl p-4 focus:ring-2 focus:ring-[#eab308] outline-none transition-all"
+                required
+              />
+              <input 
+                type="tel" 
+                placeholder="Tu Teléfono (para avisos)" 
+                value={clientPhone} 
+                onChange={(e) => setClientPhone(e.target.value)} 
+                className="w-full bg-black text-white border border-gray-800 rounded-xl p-4 focus:ring-2 focus:ring-[#eab308] outline-none transition-all"
+                required
+              />
+            </div>
+            <p className="text-gray-500 text-xs mt-3">Para no tener que rellenarlo más, regístrate en el Inicio.</p>
           </div>
-        </div>
+        )}
 
         <button 
           type="submit" 

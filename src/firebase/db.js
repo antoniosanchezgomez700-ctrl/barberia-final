@@ -66,8 +66,33 @@ export const getUserAppointments = async (uid) => {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
-export const updateAppointmentStatus = async (id, status) => {
-  await updateDoc(doc(db, "appointments", id), { status });
+export const updateAppointmentStatus = async (id, status, price = 0, method = '') => {
+  const updateData = { status };
+  if (status === 'completed') {
+    updateData.completedAt = new Date().toISOString();
+    updateData.pricePaid = Number(price);
+    updateData.paymentMethod = method;
+  }
+  await updateDoc(doc(db, "appointments", id), updateData);
+};
+
+export const recordWalkInSale = async (serviceName, price, method) => {
+  try {
+     await addDoc(collection(db, "appointments"), {
+        serviceName,
+        pricePaid: Number(price),
+        paymentMethod: method,
+        status: 'completed',
+        completedAt: new Date().toISOString(),
+        isWalkIn: true,
+        clientName: 'Cliente de Paso',
+        date: new Date().toISOString().split('T')[0]
+     });
+     return true;
+  } catch(e) {
+     console.error(e);
+     return false;
+  }
 };
 
 export const deleteAppointment = async (id) => {
@@ -81,6 +106,24 @@ export const getUserData = async (uid) => {
    }
    return null;
 }
+
+export const saveAnonymousClient = async (name, phone) => {
+  try {
+     const q = query(collection(db, "users"), where("phone", "==", phone));
+     const snap = await getDocs(q);
+     if (snap.empty) {
+        await addDoc(collection(db, "users"), {
+           name, 
+           phone, 
+           email: `Sin Registro Oficial (Tel: ${phone})`, 
+           loyaltyPoints: 0, 
+           role: 'client'
+        });
+     }
+  } catch(e) {
+     console.error(e);
+  }
+};
 
 export const getAllUsers = async () => {
   const snapshot = await getDocs(collection(db, "users"));
@@ -132,5 +175,21 @@ export const deleteClient = async (uid) => {
      return true;
   } catch(e) {
      return false;
+  }
+};
+
+export const adminCreateClient = async (name, phone) => {
+  try {
+     const docRef = await addDoc(collection(db, "users"), {
+        name,
+        phone,
+        email: `Creado en Local (${phone})`,
+        loyaltyPoints: 0,
+        role: 'client'
+     });
+     return docRef.id;
+  } catch(e) {
+     console.error(e);
+     return null;
   }
 };
