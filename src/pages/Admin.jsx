@@ -171,7 +171,10 @@ export default function Admin() {
                    <div className="flex justify-between items-start">
                      <div>
                        <p className="text-white font-bold">{app.serviceName}</p>
-                       <p className="text-[#eab308] text-[10px] font-bold uppercase tracking-widest mb-1 mt-0.5">{app.userEmail}</p>
+                       <p className="text-[#eab308] text-[11px] font-bold uppercase tracking-wide mb-0.5 mt-1">
+                         {app.clientName || 'Cliente No Registrado'} {app.clientPhone && <span className="ml-1 text-white/80">📱 {app.clientPhone}</span>}
+                       </p>
+                       <p className="text-gray-500 text-[9px] uppercase tracking-widest mb-1">{app.userEmail}</p>
                        <p className="text-gray-400 text-xs mt-1 font-mono">Día: {app.date} | {app.time} HS</p>
                      </div>
                      <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${app.status === 'completed' ? 'bg-green-900/30 text-green-500 border border-green-900/50' : 'bg-yellow-900/30 text-yellow-500 border border-yellow-900/50'}`}>

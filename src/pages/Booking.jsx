@@ -10,6 +10,8 @@ export default function Booking() {
   const [servicesList, setServicesList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(false);
+  const [clientName, setClientName] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
 
   const availableHours = ['10:00', '10:30', '11:00', '12:00', '16:00', '17:30'];
 
@@ -23,7 +25,7 @@ export default function Booking() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!date || !time || !service) return;
+    if (!date || !time || !service || !clientName || !clientPhone) return;
     
     setLoading(true);
     const selectedSvc = servicesList.find(s => s.id === service);
@@ -33,7 +35,9 @@ export default function Booking() {
       serviceId: selectedSvc.id, 
       serviceName: selectedSvc.name, 
       userId: user ? user.uid : 'anonymous',
-      userEmail: user ? user.email : 'Cliente Nuevo'
+      userEmail: user ? user.email : 'Cliente Nuevo',
+      clientName,
+      clientPhone
     });
     if (result.success) {
       setSuccess(true);
@@ -115,9 +119,32 @@ export default function Booking() {
           </div>
         )}
 
+        {/* Tus Datos */}
+        <div className="bg-[#111] border border-gray-800 p-5 rounded-2xl shadow-sm">
+          <label className="block text-sm font-black mb-4 text-[#eab308] uppercase tracking-wider">Tus Datos</label>
+          <div className="flex flex-col gap-4">
+            <input 
+              type="text" 
+              placeholder="Tu Nombre y Apellido" 
+              value={clientName} 
+              onChange={(e) => setClientName(e.target.value)} 
+              className="w-full bg-black text-white border border-gray-800 rounded-xl p-4 focus:ring-2 focus:ring-[#eab308] outline-none"
+              required
+            />
+            <input 
+              type="tel" 
+              placeholder="Tu Teléfono (para avisos)" 
+              value={clientPhone} 
+              onChange={(e) => setClientPhone(e.target.value)} 
+              className="w-full bg-black text-white border border-gray-800 rounded-xl p-4 focus:ring-2 focus:ring-[#eab308] outline-none"
+              required
+            />
+          </div>
+        </div>
+
         <button 
           type="submit" 
-          disabled={!date || !time || !service || loading}
+          disabled={!date || !time || !service || !clientName || !clientPhone || loading}
           className="w-full bg-[#eab308] disabled:bg-gray-800 disabled:text-gray-500 text-black font-black uppercase tracking-widest py-4 rounded-xl shadow-lg transition-transform active:scale-95 flex justify-center"
         >
           {loading ? <div className="animate-spin h-6 w-6 border-2 border-black border-t-transparent rounded-full"></div> : 'Confirmar Reserva'}
