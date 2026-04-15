@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getServices, updateService, getAllAppointments, updateAppointmentStatus, deleteAppointment, getAllUsers, addLoyaltyPoint, createNewService, removeLoyaltyPoint, deleteClient } from '../firebase/db';
+import { getServices, updateService, getAllAppointments, listenToAppointments, updateAppointmentStatus, deleteAppointment, getAllUsers, addLoyaltyPoint, createNewService, removeLoyaltyPoint, deleteClient } from '../firebase/db';
 import { Scanner } from '@yudiel/react-qr-scanner';
 
 export default function Admin() {
@@ -21,17 +21,19 @@ export default function Admin() {
 
   useEffect(() => {
     loadData();
+    const unsubApps = listenToAppointments((apps) => {
+      setAppointments(apps);
+    });
+    return () => unsubApps();
   }, []);
 
   const loadData = async () => {
     setLoading(true);
-    const [svcs, apps, usrs] = await Promise.all([
+    const [svcs, usrs] = await Promise.all([
       getServices(),
-      getAllAppointments(),
       getAllUsers()
     ]);
     setServices(svcs);
-    setAppointments(apps);
     setUsers(usrs);
     setLoading(false);
   };
@@ -169,6 +171,7 @@ export default function Admin() {
                    <div className="flex justify-between items-start">
                      <div>
                        <p className="text-white font-bold">{app.serviceName}</p>
+                       <p className="text-[#eab308] text-[10px] font-bold uppercase tracking-widest mb-1 mt-0.5">{app.userEmail}</p>
                        <p className="text-gray-400 text-xs mt-1 font-mono">Día: {app.date} | {app.time} HS</p>
                      </div>
                      <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${app.status === 'completed' ? 'bg-green-900/30 text-green-500 border border-green-900/50' : 'bg-yellow-900/30 text-yellow-500 border border-yellow-900/50'}`}>
@@ -276,8 +279,25 @@ export default function Admin() {
 
                {showNewServiceForm && (
                  <form onSubmit={handleCreateService} className="mb-8 bg-black p-4 rounded-2xl border border-dashed border-[#eab308]/50 flex flex-col gap-3 animate-fade-in">
+                   <div className="mb-2">
+                     <label className="text-gray-500 text-[10px] uppercase tracking-widest mb-2 block">Selecciona un Icono</label>
+                     <div className="grid grid-cols-5 gap-2 bg-[#1a1a1a] p-2 rounded-xl border border-gray-800">
+                        {['✂️', '💈', '🪒', '🧔', '👨', '👦', '🎨', '🔥', '🌟', '💎', '👑', '🧴', '🚿', '💆', '⚡'].map(emoji => (
+                           <button 
+                             key={emoji} 
+                             type="button" 
+                             onClick={() => setNewService({...newService, image: emoji})}
+                             className={`text-xl p-1.5 rounded-lg transition-all duration-200 ${newService.image === emoji ? 'bg-[#eab308]/20 scale-110 shadow-inner border border-[#eab308]/50 opacity-100 grayscale-0' : 'hover:bg-gray-800 grayscale opacity-40 hover:grayscale-0 hover:opacity-100'}`}
+                           >
+                             {emoji}
+                           </button>
+                        ))}
+                     </div>
+                   </div>
                    <div className="flex gap-2">
-                     <input type="text" value={newService.image} onChange={e => setNewService({...newService, image: e.target.value})} placeholder="✂️" maxLength="2" className="w-14 bg-[#1a1a1a] border border-gray-800 rounded-xl text-center text-xl outline-none focus:border-[#eab308]" required />
+                     <div className="w-14 bg-[#1a1a1a] border border-[#eab308] rounded-xl flex items-center justify-center text-xl shadow-[0_0_10px_rgba(234,179,8,0.2)]">
+                       {newService.image}
+                     </div>
                      <input type="text" value={newService.name} onChange={e => setNewService({...newService, name: e.target.value})} placeholder="Nombre del corte..." className="flex-1 bg-[#1a1a1a] text-white border border-gray-800 py-3 px-3 rounded-xl text-sm outline-none focus:border-[#eab308]" required />
                    </div>
                    <div className="flex gap-2">

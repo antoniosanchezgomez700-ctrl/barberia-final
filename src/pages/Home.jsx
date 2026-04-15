@@ -104,18 +104,19 @@ export default function Home() {
       <section className="px-6 mt-16">
         <h3 className="text-xl font-bold mb-6 text-white uppercase tracking-wider border-l-4 border-[#eab308] pl-3">Lo que dicen de nosotros</h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-6 scrollbar-hide -mx-6 px-6">
           {reviews.map((review, i) => (
-             <div key={i} className="bg-black/60 backdrop-blur-md p-5 rounded-2xl border border-gray-800 flex flex-col justify-between transition-transform hover:scale-[1.02]">
-               <div>
+             <div key={i} className="min-w-[85%] sm:min-w-[45%] snap-center bg-black p-5 rounded-2xl border border-gray-800 shadow-xl flex flex-col justify-between transition-transform hover:scale-[1.02] shrink-0 relative overflow-hidden">
+               <div className="absolute top-0 right-0 p-4 text-[#eab308] opacity-10 text-6xl font-serif">"</div>
+               <div className="relative z-10">
                   <div className="flex items-center gap-3 mb-4">
-                    <img src={review.avatar} alt={review.name} className="w-10 h-10 rounded-full border border-[#eab308]" />
+                    <img src={review.avatar} alt={review.name} className="w-12 h-12 rounded-full border-2 border-[#eab308]/50 p-0.5 object-cover" />
                     <div>
-                      <p className="text-xs text-white font-bold uppercase">{review.name}</p>
-                      <div className="flex text-[#eab308] text-[10px]">{'★'.repeat(review.stars)}</div>
+                      <p className="text-sm text-white font-bold tracking-wide">{review.name}</p>
+                      <div className="flex text-[#eab308] text-[10px] mt-0.5">{'★'.repeat(review.stars)}</div>
                     </div>
                   </div>
-                  <p className="text-gray-300 text-sm italic">"{review.text}"</p>
+                  <p className="text-gray-300 text-sm italic font-medium leading-relaxed">"{review.text}"</p>
                </div>
              </div>
           ))}

@@ -1,10 +1,13 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { FiHome, FiCalendar, FiAward, FiSettings } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Navigation() {
   const { user } = useAuth();
+  const location = useLocation();
+
+  if (location.pathname === '/admin') return null;
   
   const navItems = [
     { name: 'Inicio', path: '/', icon: <FiHome className="text-2xl" /> },

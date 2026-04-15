@@ -1,5 +1,5 @@
 import { db } from './config';
-import { collection, doc, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc, query, where } from "firebase/firestore";
+import { collection, doc, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc, query, where, onSnapshot } from "firebase/firestore";
 
 // Fetch Services (si está vacío, inicializa)
 export const getServices = async () => {
@@ -51,6 +51,13 @@ export const bookAppointment = async (appointmentData) => {
 export const getAllAppointments = async () => {
   const snapshot = await getDocs(collection(db, "appointments"));
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
+
+export const listenToAppointments = (callback) => {
+  const q = query(collection(db, "appointments"));
+  return onSnapshot(q, (snapshot) => {
+    callback(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+  });
 };
 
 export const getUserAppointments = async (uid) => {

@@ -27,7 +27,14 @@ export default function Booking() {
     
     setLoading(true);
     const selectedSvc = servicesList.find(s => s.id === service);
-    const result = await bookAppointment({ date, time, serviceId: selectedSvc.id, serviceName: selectedSvc.name, userId: user ? user.uid : 'anonymous' });
+    const result = await bookAppointment({ 
+      date, 
+      time, 
+      serviceId: selectedSvc.id, 
+      serviceName: selectedSvc.name, 
+      userId: user ? user.uid : 'anonymous',
+      userEmail: user ? user.email : 'Cliente Nuevo'
+    });
     if (result.success) {
       setSuccess(true);
     }
