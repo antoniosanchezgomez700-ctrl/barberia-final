@@ -23,6 +23,7 @@ export default function Admin() {
   const [chargingApp, setChargingApp] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('efectivo');
   const [cashDelivered, setCashDelivered] = useState('');
+  const [selectedPosService, setSelectedPosService] = useState('');
 
   useEffect(() => {
     loadData();
@@ -153,7 +154,7 @@ export default function Admin() {
       
       {/* Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-4 mb-4 scrollbar-hide">
-        {['citas', 'clientes', 'precios', 'fidelidad'].map(tab => (
+        {['citas', 'caja', 'clientes', 'precios', 'fidelidad'].map(tab => (
           <button 
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -250,6 +251,81 @@ export default function Admin() {
                 </div>
               ))}
             </div>
+          )}
+
+          {/* CAJA TAB (Standalone POS) */}
+          {activeTab === 'caja' && (
+             <div className="bg-[#111] border border-[#222] p-8 rounded-3xl shadow-xl animate-fade-in relative overflow-hidden">
+               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#eab308] to-green-500"></div>
+               <h3 className="font-black text-white text-xl mb-6 uppercase tracking-widest">Caja Registradora</h3>
+               
+               <div className="space-y-6">
+                 <div>
+                   <label className="text-gray-500 text-[10px] uppercase tracking-widest mb-2 block">1. Servicio Realizado (Sin Cita)</label>
+                   <select 
+                     value={selectedPosService} 
+                     onChange={(e) => { setSelectedPosService(e.target.value); setCashDelivered(''); }} 
+                     className="w-full bg-black text-[#eab308] border border-gray-800 py-4 px-4 rounded-xl outline-none focus:border-[#eab308] appearance-none font-bold tracking-wide"
+                   >
+                     <option value="" className="text-gray-500">-- Selecciona un corte --</option>
+                     {services.map(s => (
+                       <option key={s.id} value={s.id}>{s.name} - {s.price}€</option>
+                     ))}
+                   </select>
+                 </div>
+
+                 {selectedPosService && (() => {
+                    const svcPrice = services.find(s => s.id === selectedPosService)?.price || 0;
+                    return (
+                      <div className="animate-fade-in border-t border-gray-800 pt-6">
+                        <label className="text-gray-500 text-[10px] uppercase tracking-widest mb-3 block">2. Método de Pago</label>
+                        <div className="flex gap-2 mb-6">
+                          <button onClick={() => setPaymentMethod('efectivo')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-colors ${paymentMethod === 'efectivo' ? 'bg-[#eab308] text-black shadow-lg shadow-yellow-900/20' : 'bg-[#1a1a1a] text-gray-400 border border-gray-800 hover:text-white'}`}>💵 Efectivo</button>
+                          <button onClick={() => setPaymentMethod('tarjeta')} className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-colors ${paymentMethod === 'tarjeta' ? 'bg-[#eab308] text-black shadow-lg shadow-yellow-900/20' : 'bg-[#1a1a1a] text-gray-400 border border-gray-800 hover:text-white'}`}>💳 Tarjeta</button>
+                        </div>
+                        
+                        <div className="bg-black p-5 rounded-2xl border border-dashed border-[#eab308]/50 space-y-4">
+                           <div className="flex justify-between items-center pb-4 border-b border-gray-800">
+                              <span className="text-gray-400 font-bold uppercase tracking-widest text-xs">A Cobrar:</span>
+                              <span className="text-[#eab308] font-black text-4xl">{svcPrice.toFixed(2)}€</span>
+                           </div>
+                           
+                           {paymentMethod === 'efectivo' && (
+                             <>
+                               <div className="flex justify-between items-center mt-4">
+                                 <span className="text-gray-400 uppercase tracking-widest text-[10px] font-bold">El Cliente Entrega:</span>
+                                 <div className="relative w-32">
+                                   <input type="number" value={cashDelivered} onChange={e => setCashDelivered(e.target.value)} className="w-full bg-[#1a1a1a] border border-gray-700 hover:border-gray-500 rounded-xl py-3 pl-4 pr-8 text-right text-white font-bold text-2xl focus:border-[#eab308] outline-none transition-colors" placeholder="0" />
+                                   <span className="absolute right-3 top-3 text-gray-500 font-bold text-xl">€</span>
+                                 </div>
+                               </div>
+                               
+                               {Number(cashDelivered) >= svcPrice && svcPrice > 0 && (
+                                 <div className="flex justify-between items-center mt-4 bg-green-900/20 p-4 rounded-xl border border-green-900/50">
+                                   <span className="text-green-500 font-bold uppercase tracking-widest text-[10px]">Dale de Cambio:</span>
+                                   <span className="text-green-500 font-black text-2xl">{(Number(cashDelivered) - svcPrice).toFixed(2)}€</span>
+                                 </div>
+                               )}
+                             </>
+                           )}
+
+                           <button 
+                             onClick={() => {
+                               alert('💰 ¡Cobrado con éxito en Caja Fuerte!');
+                               setSelectedPosService('');
+                               setCashDelivered('');
+                             }} 
+                             disabled={paymentMethod === 'efectivo' && (Number(cashDelivered) < svcPrice && svcPrice > 0)}
+                             className="w-full mt-6 bg-white text-black py-4 rounded-xl text-sm font-black uppercase tracking-widest hover:bg-gray-200 disabled:opacity-50 transition-transform active:scale-95 shadow-xl"
+                           >
+                             Completar Venta
+                           </button>
+                        </div>
+                      </div>
+                    )
+                 })()}
+               </div>
+             </div>
           )}
 
           {/* CLIENTES TAB */}
