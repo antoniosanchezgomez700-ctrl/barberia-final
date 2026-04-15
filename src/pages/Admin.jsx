@@ -19,6 +19,11 @@ export default function Admin() {
   const [showNewServiceForm, setShowNewServiceForm] = useState(false);
   const [newService, setNewService] = useState({ name: '', price: '', duration: 30, image: '✂️' });
 
+  // Punto de Venta (POS)
+  const [chargingApp, setChargingApp] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState('efectivo');
+  const [cashDelivered, setCashDelivered] = useState('');
+
   useEffect(() => {
     loadData();
     const unsubApps = listenToAppointments((apps) => {
@@ -125,8 +130,13 @@ export default function Admin() {
 
   const handleStatusChange = async (id, newStatus) => {
     await updateAppointmentStatus(id, newStatus);
-    const apps = await getAllAppointments();
-    setAppointments(apps);
+  };
+
+  const handleConfirmCharge = async (appId) => {
+    setLoading(true);
+    await updateAppointmentStatus(appId, 'completed');
+    setChargingApp(null);
+    setLoading(false);
   };
 
   const handleDelete = async (id) => {
@@ -171,20 +181,72 @@ export default function Admin() {
                    <div className="flex justify-between items-start">
                      <div>
                        <p className="text-white font-bold">{app.serviceName}</p>
-                       <p className="text-[#eab308] text-[11px] font-bold uppercase tracking-wide mb-0.5 mt-1">
-                         {app.clientName || 'Cliente No Registrado'} {app.clientPhone && <span className="ml-1 text-white/80">📱 {app.clientPhone}</span>}
+                       <p className="text-[#eab308] text-[15px] font-bold tracking-wide mb-0.5 mt-1">
+                         {app.clientName || 'CITA ANTIGUA (Sin Nombre)'}{app.clientPhone && <span className="ml-2 text-white/80 font-normal">📱 {app.clientPhone}</span>}
                        </p>
-                       <p className="text-gray-500 text-[9px] uppercase tracking-widest mb-1">{app.userEmail}</p>
+                       <p className="text-gray-400 text-xs mb-2 truncate">{app.userEmail}</p>
                        <p className="text-gray-400 text-xs mt-1 font-mono">Día: {app.date} | {app.time} HS</p>
                      </div>
                      <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${app.status === 'completed' ? 'bg-green-900/30 text-green-500 border border-green-900/50' : 'bg-yellow-900/30 text-yellow-500 border border-yellow-900/50'}`}>
                        {app.status || 'Pendiente'}
                      </span>
                    </div>
-                   <div className="flex gap-2 mt-2">
-                     <button onClick={() => handleStatusChange(app.id, 'completed')} className="flex-1 bg-green-900/10 text-green-500 border border-green-900/30 py-2.5 rounded-xl text-xs font-bold uppercase transition hover:bg-green-900/30">✓ Sellar como Lista</button>
-                     <button onClick={() => handleDelete(app.id)} className="flex-1 bg-red-900/10 text-red-500 border border-red-900/30 py-2.5 rounded-xl text-xs font-bold uppercase transition hover:bg-red-900/30">✕ Cancelar</button>
-                   </div>
+                   {chargingApp?.id === app.id ? (
+                     <div className="mt-2 p-4 bg-black rounded-xl border border-[#eab308] border-dashed animate-fade-in">
+                       <h4 className="text-[#eab308] font-black text-xs uppercase tracking-widest mb-3 border-b border-gray-800 pb-2">Procesar Cobro</h4>
+                       <div className="flex gap-2 mb-4">
+                         <button onClick={() => setPaymentMethod('efectivo')} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-colors ${paymentMethod === 'efectivo' ? 'bg-[#eab308] text-black' : 'bg-gray-900 text-white'}`}>💵 Efectivo</button>
+                         <button onClick={() => setPaymentMethod('tarjeta')} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-colors ${paymentMethod === 'tarjeta' ? 'bg-[#eab308] text-black' : 'bg-gray-900 text-white'}`}>💳 Tarjeta</button>
+                       </div>
+                       
+                       {(() => {
+                          const svcPrice = services.find(s => s.name === app.serviceName)?.price || 0;
+                          return (
+                            <div className="space-y-3">
+                               <div className="flex justify-between items-center">
+                                  <span className="text-gray-400 text-sm">Total a cobrar:</span>
+                                  <span className="text-white font-black text-xl">{svcPrice.toFixed(2)}€</span>
+                               </div>
+                               
+                               {paymentMethod === 'efectivo' && (
+                                 <>
+                                   <div className="flex justify-between items-center mt-2">
+                                     <span className="text-gray-400 text-sm">Entregado:</span>
+                                     <div className="relative w-24">
+                                       <input type="number" value={cashDelivered} onChange={e => setCashDelivered(e.target.value)} className="w-full bg-gray-900 border border-gray-700 rounded-lg py-1 pl-2 pr-6 text-right text-[#eab308] font-bold focus:border-[#eab308] outline-none" placeholder="0" />
+                                       <span className="absolute right-2 top-1 text-gray-500 font-bold">€</span>
+                                     </div>
+                                   </div>
+                                   
+                                   {Number(cashDelivered) >= svcPrice && svcPrice > 0 && (
+                                     <div className="flex justify-between items-center text-sm bg-green-900/20 px-3 py-2 mt-2 rounded-lg border border-green-900/50 animate-fade-in">
+                                       <span className="text-green-500 font-bold uppercase tracking-widest text-[10px]">Devolver Cambio:</span>
+                                       <span className="text-green-500 font-black text-lg">{(Number(cashDelivered) - svcPrice).toFixed(2)}€</span>
+                                     </div>
+                                   )}
+                                 </>
+                               )}
+
+                               <div className="flex gap-2 mt-4 pt-4 border-t border-gray-800">
+                                  <button onClick={() => setChargingApp(null)} className="px-4 py-2 bg-gray-900 text-gray-400 rounded-lg text-xs font-bold uppercase hover:bg-gray-800">Cerrar</button>
+                                  <button 
+                                    onClick={() => handleConfirmCharge(app.id)} 
+                                    disabled={paymentMethod === 'efectivo' && (Number(cashDelivered) < svcPrice && svcPrice > 0)}
+                                    className="flex-1 bg-green-600 text-white rounded-lg text-xs font-black uppercase tracking-widest hover:bg-green-500 disabled:opacity-50 disabled:grayscale transition-all"
+                                  >
+                                    Confirmar Pago
+                                  </button>
+                               </div>
+                            </div>
+                          )
+                       })()}
+                     </div>
+                   ) : (
+                     <div className="flex gap-2 mt-2">
+                       <button onClick={() => { setChargingApp(app); setCashDelivered(''); setPaymentMethod('efectivo'); }} className="flex-1 bg-green-900/10 text-green-500 border border-green-900/30 py-2.5 rounded-xl text-xs font-bold uppercase transition hover:bg-green-900/30 shadow-sm">✓ SELLAR Y COBRAR</button>
+                       <button onClick={() => handleDelete(app.id)} className="flex-1 bg-red-900/10 text-red-500 border border-red-900/30 py-2.5 rounded-xl text-xs font-bold uppercase transition hover:bg-red-900/30 shadow-sm">✕ Cancelar Cita</button>
+                     </div>
+                   )}
                 </div>
               ))}
             </div>
@@ -198,9 +260,10 @@ export default function Admin() {
                {users.map(u => (
                  <div key={u.uid} className="bg-[#111] border border-gray-800 p-4 rounded-2xl flex justify-between items-center transition-transform hover:scale-[1.02]">
                     <div className="flex-1">
-                      <p className="text-white font-bold text-sm tracking-wide break-all">{u.email}</p>
-                      <p className="text-[10px] text-gray-500 mt-1 font-mono tracking-widest">ID: {u.uid}</p>
-                      <button onClick={() => handleDeleteClient(u.uid)} className="mt-3 text-red-500 bg-red-950/30 px-3 py-1 rounded border border-red-900/50 text-[10px] uppercase font-bold tracking-widest hover:bg-red-900/50 transition">
+                      <p className="text-[#eab308] font-bold text-[15px] tracking-wide mb-0.5">{u.name || 'Sin Nombre'}</p>
+                      {u.phone && <p className="text-white text-xs font-bold mb-1">📱 {u.phone}</p>}
+                      <p className="text-[10px] text-gray-500 font-mono tracking-widest break-all mb-3">{u.email}</p>
+                      <button onClick={() => handleDeleteClient(u.uid)} className="text-red-500 bg-red-950/30 px-3 py-1 rounded border border-red-900/50 text-[10px] uppercase font-bold tracking-widest hover:bg-red-900/50 transition">
                          Eliminar
                       </button>
                     </div>
