@@ -9,6 +9,9 @@ export default function Admin() {
   const [users, setUsers] = useState([]);
   const [barbers, setBarbers] = useState([]);
   const [newBarberName, setNewBarberName] = useState('');
+  const [editingBarberId, setEditingBarberId] = useState(null);
+  const [editingBarberName, setEditingBarberName] = useState('');
+  const [selectedBarberFilter, setSelectedBarberFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   
   // Fidelidad
@@ -196,8 +199,24 @@ export default function Admin() {
     }
   };
 
+  const handleUpdateBarber = async (id) => {
+    if (!editingBarberName.trim()) {
+      setEditingBarberId(null);
+      return;
+    }
+    setLoading(true);
+    const success = await updateBarber(id, editingBarberName);
+    if (success) {
+       setBarbers(barbers.map(b => b.id === id ? { ...b, name: editingBarberName } : b));
+       const apps = await getAllAppointments();
+       setAppointments(apps);
+    }
+    setEditingBarberId(null);
+    setLoading(false);
+  };
+
   return (
-    <div className="px-4 py-8 animate-fade-in pb-24 max-w-lg mx-auto">
+    <div className="px-4 py-8 animate-fade-in pb-24 max-w-5xl mx-auto w-full">
       {qrModalUser && (
          <div className="fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-center p-6 animate-fade-in">
             <h2 className="text-white text-3xl font-black uppercase tracking-widest mb-2 italic drop-shadow-lg">Tarjeta Cliente</h2>
@@ -222,7 +241,7 @@ export default function Admin() {
       
       {/* Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-4 mb-4 scrollbar-hide">
-        {['citas', 'caja', 'clientes', 'precios', 'fidelidad', 'peluqueros'].map(tab => (
+        {['citas', 'peluqueros', 'caja', 'clientes', 'precios', 'fidelidad'].map(tab => (
           <button 
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -243,9 +262,33 @@ export default function Admin() {
           {/* CITAS TAB */}
           {activeTab === 'citas' && (
             <div className="space-y-4">
-              <h3 className="font-bold text-white mb-4 border-l-4 border-[#eab308] pl-3">Gestión de Citas</h3>
-              {appointments.length === 0 ? <p className="text-sm text-gray-500 bg-[#111] p-4 rounded-xl border border-gray-800">No hay citas registradas en tu calendario aún.</p> : null}
-              {appointments.map(app => (
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6 border-l-4 border-[#eab308] pl-3">
+                 <h3 className="font-bold text-white">Gestión de Citas</h3>
+                 <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                    <button onClick={() => setSelectedBarberFilter('all')} className={`px-4 py-2 rounded-xl text-xs font-black uppercase whitespace-nowrap transition-colors ${selectedBarberFilter === 'all' ? 'bg-[#eab308] text-black shadow-lg' : 'bg-[#1a1a1a] text-gray-400 border border-gray-800 hover:text-white'}`}>Todas</button>
+                    {barbers.map(b => {
+                       const todayStr = new Date().toISOString().split('T')[0];
+                       const generated = appointments.filter(a => a.barberId === b.id && a.status === 'completed' && a.completedAt?.startsWith(todayStr)).reduce((sum, a) => sum + (Number(a.pricePaid) || 0), 0);
+                       return (
+                         <div key={b.id} className="relative flex-shrink-0">
+                           <button onClick={() => setSelectedBarberFilter(b.id)} className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition-colors flex items-center gap-2 ${selectedBarberFilter === b.id ? 'bg-[#eab308] text-black shadow-lg pr-12' : 'bg-[#1a1a1a] text-gray-400 border border-gray-800 hover:text-white pr-12'}`}>
+                             {b.name}
+                           </button>
+                           {generated > 0 && <span className="absolute right-0 top-0 bottom-0 bg-green-500/20 text-green-500 border-l border-green-500/50 text-[10px] px-2 rounded-r-xl font-black flex items-center justify-center pointer-events-none">+{generated}€</span>}
+                           {generated === 0 && <span className="absolute right-0 top-0 bottom-0 bg-gray-900 text-gray-500 border-l border-gray-800 text-[10px] px-2 rounded-r-xl font-black flex items-center justify-center pointer-events-none">0€</span>}
+                         </div>
+                       )
+                    })}
+                 </div>
+              </div>
+              
+              {(() => {
+                 const filteredApps = selectedBarberFilter === 'all' ? appointments : appointments.filter(a => a.barberId === selectedBarberFilter);
+                 return (
+                   <>
+                     {filteredApps.length === 0 ? <p className="text-sm text-gray-500 bg-[#111] p-4 rounded-xl border border-gray-800">No hay citas registradas para esta vista.</p> : null}
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       {filteredApps.map(app => (
                 <div key={app.id} className="bg-[#111] border border-gray-800 p-4 rounded-2xl flex flex-col gap-3 transition-transform hover:scale-[1.02]">
                    <div className="flex justify-between items-start">
                      <div>
@@ -625,8 +668,21 @@ export default function Admin() {
                <div className="space-y-3">
                  {barbers.map(b => (
                     <div key={b.id} className="flex justify-between items-center bg-black p-4 rounded-2xl border border-gray-800 transition-transform hover:scale-[1.02]">
-                      <span className="text-white font-bold text-sm tracking-wide">{b.name}</span>
-                      <button onClick={() => handleDeleteBarberObj(b.id)} className="text-red-500 bg-red-900/20 px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold tracking-widest border border-red-900/50 hover:bg-red-900/40">✕ Eliminar</button>
+                      {editingBarberId === b.id ? (
+                        <div className="flex-1 flex gap-2 mr-2">
+                           <input type="text" value={editingBarberName} onChange={e => setEditingBarberName(e.target.value)} className="flex-1 bg-[#1a1a1a] text-white border border-[#eab308] px-3 py-1.5 rounded-lg text-sm outline-none" autoFocus />
+                           <button onClick={() => handleUpdateBarber(b.id)} className="text-black bg-[#eab308] px-4 py-1.5 rounded-lg text-xs font-bold uppercase transition hover:bg-yellow-400">Guardar</button>
+                           <button onClick={() => setEditingBarberId(null)} className="text-gray-400 bg-gray-800 px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition hover:text-white">Cancelar</button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-white font-bold text-sm tracking-wide">{b.name}</span>
+                          <div className="flex gap-2">
+                            <button onClick={() => { setEditingBarberId(b.id); setEditingBarberName(b.name); }} className="text-gray-400 bg-[#1a1a1a] px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold tracking-widest border border-gray-800 hover:text-white hover:border-gray-500">✎ Editar</button>
+                            <button onClick={() => handleDeleteBarberObj(b.id)} className="text-red-500 bg-red-900/20 px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold tracking-widest border border-red-900/50 hover:bg-red-900/40">✕ Eliminar</button>
+                          </div>
+                        </>
+                      )}
                     </div>
                  ))}
                  {barbers.length === 0 && <p className="text-gray-500 text-[11px] text-center italic mt-10">Creando plantilla inicial...</p>}

@@ -60,6 +60,25 @@ export const deleteBarber = async (id) => {
   await deleteDoc(doc(db, "barbers", id));
 };
 
+export const updateBarber = async (id, newName) => {
+  try {
+     await updateDoc(doc(db, "barbers", id), { name: newName });
+     
+     const q = query(collection(db, "appointments"), where("barberId", "==", id));
+     const snap = await getDocs(q);
+     
+     const updatePromises = [];
+     snap.forEach((d) => {
+        updatePromises.push(updateDoc(doc(db, "appointments", d.id), { barberName: newName }));
+     });
+     await Promise.all(updatePromises);
+     return true;
+  } catch(e) {
+     console.error(e);
+     return false;
+  }
+};
+
 const BASE_HOURS = ['10:00', '10:30', '11:00', '12:00', '16:00', '17:30'];
 
 export const getAvailableHours = async (dateStr) => {
