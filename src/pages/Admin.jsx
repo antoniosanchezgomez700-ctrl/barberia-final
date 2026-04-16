@@ -325,7 +325,7 @@ export default function Admin() {
                                  <>
                                    <div className="flex justify-between items-center mt-2">
                                      <span className="text-gray-400 text-sm">Entregado:</span>
-                                     <div className="relative w-24">
+                                     <div className="relative">
                                        <input type="number" value={cashDelivered} onChange={e => setCashDelivered(e.target.value)} className="w-full bg-gray-900 border border-gray-700 rounded-lg py-1 pl-2 pr-6 text-right text-[#eab308] font-bold focus:border-[#eab308] outline-none" placeholder="0" />
                                        <span className="absolute right-2 top-1 text-gray-500 font-bold">€</span>
                                      </div>
