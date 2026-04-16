@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { bookAppointment, getServices, getUserData, saveAnonymousClient } from '../firebase/db';
+import { bookAppointment, getServices, getUserData, saveAnonymousClient, getAvailableHours } from '../firebase/db';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Booking() {
@@ -12,8 +12,8 @@ export default function Booking() {
   const [success, setSuccess] = useState(false);
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
-
-  const availableHours = ['10:00', '10:30', '11:00', '12:00', '16:00', '17:30'];
+  const [availableHours, setAvailableHours] = useState([]);
+  const [loadingHours, setLoadingHours] = useState(false);
 
   useEffect(() => {
     getServices().then(data => {
@@ -33,6 +33,17 @@ export default function Booking() {
       }
     });
   }, [user]);
+
+  useEffect(() => {
+    if (date) {
+      setLoadingHours(true);
+      setTime('');
+      getAvailableHours(date).then(hours => {
+        setAvailableHours(hours);
+        setLoadingHours(false);
+      });
+    }
+  }, [date]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -120,18 +131,27 @@ export default function Booking() {
         {date && (
           <div className="bg-[#111] border border-gray-800 p-5 rounded-2xl shadow-sm animate-fade-in">
             <label className="block text-sm font-black mb-3 text-[#eab308] uppercase tracking-wider">Horas disponibles</label>
-            <div className="grid grid-cols-3 gap-3">
-              {availableHours.map(h => (
-                <button 
-                  key={h}
-                  type="button"
-                  onClick={() => setTime(h)}
-                  className={`p-3 rounded-xl border text-center font-bold transition-colors ${time === h ? 'bg-[#eab308] border-[#eab308] text-black shadow-lg shadow-[#eab308]/30' : 'bg-black border-gray-800 text-white hover:border-gray-600'}`}
-                >
-                  {h}
-                </button>
-              ))}
-            </div>
+            {loadingHours ? (
+              <div className="text-gray-500 text-sm animate-pulse flex items-center gap-2">
+                 <div className="animate-spin h-4 w-4 border-2 border-[#eab308] border-t-transparent rounded-full"></div>
+                 Consultando disponibilidad...
+              </div>
+            ) : availableHours.length === 0 ? (
+              <p className="text-red-500 text-sm font-bold bg-red-900/20 p-3 rounded-lg border border-red-900/50">Lo sentimos, no hay sillas libres este día. Por favor, elige otro.</p>
+            ) : (
+              <div className="grid grid-cols-3 gap-3">
+                {availableHours.map(h => (
+                  <button 
+                    key={h}
+                    type="button"
+                    onClick={() => setTime(h)}
+                    className={`p-3 rounded-xl border text-center font-bold transition-colors ${time === h ? 'bg-[#eab308] border-[#eab308] text-black shadow-lg shadow-[#eab308]/30' : 'bg-black border-gray-800 text-white hover:border-gray-600'}`}
+                  >
+                    {h}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

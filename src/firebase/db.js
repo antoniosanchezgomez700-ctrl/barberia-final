@@ -38,9 +38,66 @@ export const createNewService = async (serviceData) => {
   }
 };
 
+export const getBarbers = async () => {
+  const querySnapshot = await getDocs(collection(db, "barbers"));
+  if (querySnapshot.empty) {
+     const defaultBarber = await addDoc(collection(db, "barbers"), { name: "Peluquero Principal" });
+     return [{ id: defaultBarber.id, name: "Peluquero Principal" }];
+  }
+  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
+
+export const addBarber = async (name) => {
+  try {
+     const docRef = await addDoc(collection(db, "barbers"), { name });
+     return { id: docRef.id, name };
+  } catch(e) {
+     return null;
+  }
+};
+
+export const deleteBarber = async (id) => {
+  await deleteDoc(doc(db, "barbers", id));
+};
+
+const BASE_HOURS = ['10:00', '10:30', '11:00', '12:00', '16:00', '17:30'];
+
+export const getAvailableHours = async (dateStr) => {
+   const barbers = await getBarbers();
+   const totalChairs = barbers.length;
+   
+   const q = query(collection(db, "appointments"), where("date", "==", dateStr));
+   const snap = await getDocs(q);
+   const appointmentsToday = snap.docs.map(doc => doc.data());
+   
+   const available = BASE_HOURS.filter(hour => {
+      const sameHourAppointments = appointmentsToday.filter(a => a.time === hour);
+      return sameHourAppointments.length < totalChairs;
+   });
+   
+   return available;
+};
+
 export const bookAppointment = async (appointmentData) => {
   try {
-     const docRef = await addDoc(collection(db, "appointments"), { ...appointmentData, status: 'pending' });
+     const barbers = await getBarbers();
+     const q = query(collection(db, "appointments"), where("date", "==", appointmentData.date));
+     const snap = await getDocs(q);
+     const todayAppointments = snap.docs.map(d => d.data());
+     
+     const busyAtHour = todayAppointments.filter(a => a.time === appointmentData.time);
+     const busyBarberIds = busyAtHour.map(a => a.barberId);
+     
+     const freeBarber = barbers.find(b => !busyBarberIds.includes(b.id)) || barbers[0];
+     
+     const finalData = { 
+        ...appointmentData, 
+        barberId: freeBarber.id || 'default', 
+        barberName: freeBarber.name || 'Peluquero Principal',
+        status: 'pending' 
+     };
+     
+     const docRef = await addDoc(collection(db, "appointments"), finalData);
      return { success: true, id: docRef.id };
   } catch(e) {
      console.error(e);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getServices, updateService, getAllAppointments, listenToAppointments, updateAppointmentStatus, deleteAppointment, getAllUsers, addLoyaltyPoint, createNewService, removeLoyaltyPoint, deleteClient, recordWalkInSale, adminCreateClient } from '../firebase/db';
+import { getServices, updateService, getAllAppointments, listenToAppointments, updateAppointmentStatus, deleteAppointment, getAllUsers, addLoyaltyPoint, createNewService, removeLoyaltyPoint, deleteClient, recordWalkInSale, adminCreateClient, getBarbers, addBarber, deleteBarber } from '../firebase/db';
 import { Scanner } from '@yudiel/react-qr-scanner';
 
 export default function Admin() {
@@ -7,6 +7,8 @@ export default function Admin() {
   const [services, setServices] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [users, setUsers] = useState([]);
+  const [barbers, setBarbers] = useState([]);
+  const [newBarberName, setNewBarberName] = useState('');
   const [loading, setLoading] = useState(true);
   
   // Fidelidad
@@ -43,12 +45,14 @@ export default function Admin() {
 
   const loadData = async () => {
     setLoading(true);
-    const [svcs, usrs] = await Promise.all([
+    const [svcs, usrs, brbrs] = await Promise.all([
       getServices(),
-      getAllUsers()
+      getAllUsers(),
+      getBarbers()
     ]);
     setServices(svcs);
     setUsers(usrs);
+    setBarbers(brbrs);
     setLoading(false);
   };
 
@@ -173,6 +177,24 @@ export default function Admin() {
        setAppointments(apps);
     }
   };
+  const handleCreateBarber = async (e) => {
+    e.preventDefault();
+    if (!newBarberName) return;
+    setLoading(true);
+    const created = await addBarber(newBarberName);
+    if (created) setBarbers([...barbers, created]);
+    setNewBarberName('');
+    setLoading(false);
+  };
+
+  const handleDeleteBarberObj = async (id) => {
+    if(window.confirm("¿Seguro que deseas eliminar este peluquero de la plantilla? Esto reducirá las citas que caben por hora.")){
+       setLoading(true);
+       await deleteBarber(id);
+       setBarbers(barbers.filter(b => b.id !== id));
+       setLoading(false);
+    }
+  };
 
   return (
     <div className="px-4 py-8 animate-fade-in pb-24 max-w-lg mx-auto">
@@ -200,7 +222,7 @@ export default function Admin() {
       
       {/* Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-4 mb-4 scrollbar-hide">
-        {['citas', 'caja', 'clientes', 'precios', 'fidelidad'].map(tab => (
+        {['citas', 'caja', 'clientes', 'precios', 'fidelidad', 'peluqueros'].map(tab => (
           <button 
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -233,6 +255,9 @@ export default function Admin() {
                        </p>
                        <p className="text-gray-400 text-xs mb-2 truncate">{app.userEmail}</p>
                        <p className="text-gray-400 text-xs mt-1 font-mono">Día: {app.date} | {app.time} HS</p>
+                       <div className="mt-1 inline-block bg-[#1a1a1a] text-[#eab308]/80 text-[10px] px-2 py-0.5 rounded border border-[#eab308]/20 uppercase tracking-widest font-bold">
+                         ✂️ Asignado a: {app.barberName || 'Peluquero Principal'}
+                       </div>
                      </div>
                      <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${app.status === 'completed' ? 'bg-green-900/30 text-green-500 border border-green-900/50' : 'bg-yellow-900/30 text-yellow-500 border border-yellow-900/50'}`}>
                        {app.status || 'Pendiente'}
@@ -582,6 +607,29 @@ export default function Admin() {
                  <button onClick={savePrices} className="w-full mt-8 bg-white text-black font-black py-4 rounded-2xl uppercase tracking-widest hover:bg-gray-200 transition-transform active:scale-95 shadow-lg border-2 border-white">
                    Guardar en Base
                  </button>
+               </div>
+             </div>
+          )}
+
+          {/* PELUQUEROS TAB */}
+          {activeTab === 'peluqueros' && (
+             <div className="bg-[#111] border border-gray-800 p-6 rounded-3xl shadow-xl animate-fade-in">
+               <h3 className="font-bold text-white mb-6 border-l-4 border-[#eab308] pl-3">Plantilla de Peluqueros</h3>
+               <p className="text-xs text-gray-400 mb-6 font-medium">Nota: Cada peluquero que añadas aquí abrirá una nueva "silla" en el local para que los clientes reserven a la misma hora simultáneamente.</p>
+               
+               <form onSubmit={handleCreateBarber} className="flex gap-2 mb-6">
+                 <input type="text" value={newBarberName} onChange={e => setNewBarberName(e.target.value)} placeholder="Ej. Juan, Pedro..." className="flex-1 bg-black text-white border border-gray-800 py-3 px-4 rounded-xl text-sm outline-none focus:border-[#eab308]" required />
+                 <button type="submit" className="bg-[#eab308] text-black font-black uppercase tracking-widest px-6 rounded-xl hover:bg-yellow-400">Añadir</button>
+               </form>
+
+               <div className="space-y-3">
+                 {barbers.map(b => (
+                    <div key={b.id} className="flex justify-between items-center bg-black p-4 rounded-2xl border border-gray-800 transition-transform hover:scale-[1.02]">
+                      <span className="text-white font-bold text-sm tracking-wide">{b.name}</span>
+                      <button onClick={() => handleDeleteBarberObj(b.id)} className="text-red-500 bg-red-900/20 px-3 py-1.5 rounded-lg text-[10px] uppercase font-bold tracking-widest border border-red-900/50 hover:bg-red-900/40">✕ Eliminar</button>
+                    </div>
+                 ))}
+                 {barbers.length === 0 && <p className="text-gray-500 text-[11px] text-center italic mt-10">Creando plantilla inicial...</p>}
                </div>
              </div>
           )}
