@@ -65,20 +65,34 @@ export const updateBarber = async (id, newName) => {
      const barberRef = doc(db, "barbers", id);
      await updateDoc(barberRef, { name: newName });
      
-     // Solo actualizamos citas pendientes para ir más rápido
+     // OPTIMIZACIÓN: Solo actualizamos citas pendientes de HOY en adelante.
+     // No tocamos el historial antiguo (canceladas, expiradas) para mayor velocidad.
+     const todayStr = new Date().toISOString().split('T')[0];
+     
      const q = query(
        collection(db, "appointments"), 
        where("barberId", "==", id),
-       where("status", "!=", "completed")
+       where("status", "==", "pending"),
+       where("date", ">=", todayStr)
      );
+     
      const snap = await getDocs(q);
      
-     const batch = writeBatch(db);
-     snap.forEach((d) => {
-        batch.update(doc(db, "appointments", d.id), { barberName: newName });
-     });
+     // Firestore Batch limit is 500 operations
+     const chunks = [];
+     const docs = snap.docs;
+     for (let i = 0; i < docs.length; i += 450) {
+       chunks.push(docs.slice(i, i + 450));
+     }
+
+     for (const chunk of chunks) {
+       const batch = writeBatch(db);
+       chunk.forEach((d) => {
+         batch.update(doc(db, "appointments", d.id), { barberName: newName });
+       });
+       await batch.commit();
+     }
      
-     await batch.commit();
      return true;
   } catch(e) {
      console.error("Error actualizando barbero:", e);

@@ -214,7 +214,7 @@ export default function Admin() {
   };
 
   return (
-    <div className="px-4 py-8 animate-fade-in pb-24 max-w-5xl mx-auto w-full">
+    <div className="px-4 py-8 animate-fade-in pb-24 max-w-7xl mx-auto w-full">
       {qrModalUser && (
          <div className="fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-center p-6 animate-fade-in">
             <h2 className="text-white text-3xl font-black uppercase tracking-widest mb-2 italic drop-shadow-lg">Tarjeta Cliente</h2>
