@@ -362,8 +362,12 @@ export default function Admin() {
                        <button onClick={() => handleDelete(app.id)} className="flex-1 bg-red-900/10 text-red-500 border border-red-900/30 py-2.5 rounded-xl text-xs font-bold uppercase transition hover:bg-red-900/30 shadow-sm">✕ Cancelar Cita</button>
                      </div>
                    )}
-                </div>
-              ))}
+                 </div>
+               ))}
+                     </div>
+                   </>
+                 );
+               })()}
             </div>
           )}
 
@@ -531,7 +535,7 @@ export default function Admin() {
                     </div>
                  </div>
                ))}
-             </div>
+              </div>
           )}
 
           {/* FIDELIDAD TAB */}
