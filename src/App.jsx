@@ -60,7 +60,7 @@ function AppContent() {
         </header>
 
         {/* RUTAS */}
-        <div className="max-w-5xl mx-auto w-full relative z-10 pt-4">
+        <div className="max-w-7xl mx-auto w-full relative z-10 pt-4">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/booking" element={<AuthCheck><Booking /></AuthCheck>} />

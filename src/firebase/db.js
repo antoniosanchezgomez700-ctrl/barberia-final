@@ -1,5 +1,5 @@
 import { db } from './config';
-import { collection, doc, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc, query, where, onSnapshot } from "firebase/firestore";
+import { collection, doc, getDocs, getDoc, setDoc, addDoc, updateDoc, deleteDoc, query, where, onSnapshot, writeBatch } from "firebase/firestore";
 
 // Fetch Services (si está vacío, inicializa)
 export const getServices = async () => {
@@ -62,19 +62,26 @@ export const deleteBarber = async (id) => {
 
 export const updateBarber = async (id, newName) => {
   try {
-     await updateDoc(doc(db, "barbers", id), { name: newName });
+     const barberRef = doc(db, "barbers", id);
+     await updateDoc(barberRef, { name: newName });
      
-     const q = query(collection(db, "appointments"), where("barberId", "==", id));
+     // Solo actualizamos citas pendientes para ir más rápido
+     const q = query(
+       collection(db, "appointments"), 
+       where("barberId", "==", id),
+       where("status", "!=", "completed")
+     );
      const snap = await getDocs(q);
      
-     const updatePromises = [];
+     const batch = writeBatch(db);
      snap.forEach((d) => {
-        updatePromises.push(updateDoc(doc(db, "appointments", d.id), { barberName: newName }));
+        batch.update(doc(db, "appointments", d.id), { barberName: newName });
      });
-     await Promise.all(updatePromises);
+     
+     await batch.commit();
      return true;
   } catch(e) {
-     console.error(e);
+     console.error("Error actualizando barbero:", e);
      return false;
   }
 };

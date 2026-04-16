@@ -208,8 +208,6 @@ export default function Admin() {
     const success = await updateBarber(id, editingBarberName);
     if (success) {
        setBarbers(barbers.map(b => b.id === id ? { ...b, name: editingBarberName } : b));
-       const apps = await getAllAppointments();
-       setAppointments(apps);
     }
     setEditingBarberId(null);
     setLoading(false);
